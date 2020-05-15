@@ -73,15 +73,10 @@ if __name__ == "__main__":
 
     print("f(x) = (x - y)^2 + 10 * (x + 5)^2\nh(x) = x + y - 1\ng(x) = - x - y\nx initial = {}\n".format(x_init))
 
-    result = penalty_method(x_init, np.ones(2), lambda arg: np.array([h_penalty(h(arg)), g_penalty(g(arg))]), 1.1)
     print("Penalty method results:\nH(x) = |x|^a\nG(x) = ((x + |x|) / 2)^a\n")
-    print("a = 1\nx = {}\nf(x) = {}\n".format(result, f(result)))
-
-    result = penalty_method(x_init, np.ones(2), lambda arg: np.array([h_penalty(h(arg), 2), g_penalty(g(arg), 2)]), 1.1)
-    print("a = 2\nx = {}\nf(x) = {}\n".format(result, f(result)))
-
-    result = penalty_method(x_init, np.ones(2), lambda arg: np.array([h_penalty(h(arg), 4), g_penalty(g(arg), 4)]), 1.1)
-    print("a = 2\nx = {}\nf(x) = {}\n".format(result, f(result)))
+    for a in [1, 2, 4]:
+        result = penalty_method(x_init, np.ones(2), lambda arg: np.array([h_penalty(h(arg), a), g_penalty(g(arg), a)]), 1.1)
+        print("a = {}\nx = {}\nf(x) = {}\n".format(a, result, f(result)))
 
     result = penalty_method(x_init, np.array([550]), lambda arg: np.array([g_barrier_inv(g(arg))]), 0.9)
     print("Barrier method results:\n")
