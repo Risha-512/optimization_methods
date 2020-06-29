@@ -93,6 +93,77 @@ def newton_raphson(x, x_new, matrix):
     return matrix - numerator / denominator
 
 
+def broyden(x, x_new, matrix):
+    grad = np.array([grad_f(x_new) - grad_f(x)]).transpose()
+    delta_x = np.array([x_new - x]).transpose()
+
+    numerator = delta_x - np.dot(matrix, grad)
+    numerator = np.dot(numerator, numerator.transpose())
+    denominator = (delta_x - np.dot(matrix, grad)).transpose()
+    denominator = np.dot(denominator, grad)
+
+    return numerator / denominator
+
+
+def pearson3(x, x_new, matrix):
+    grad = np.array([grad_f(x_new) - grad_f(x)]).transpose()
+    delta_x = np.array([x_new - x]).transpose()
+
+    numerator = delta_x - np.dot(matrix, grad)
+    numerator = np.dot(numerator, np.dot(matrix, grad).transpose())
+    denominator = np.dot(grad.transpose(), matrix)
+    denominator = np.dot(denominator, grad)
+
+    return numerator / denominator
+
+
+def fletcher(x, x_new, matrix):
+    grad = np.array([grad_f(x_new) - grad_f(x)]).transpose()
+    delta_x = np.array([x_new - x]).transpose()
+
+    numerator = np.dot(delta_x, grad.transpose())
+    denominator = np.dot(delta_x.transpose(), grad)
+    matrix_a = np.dot(np.identity(2) - numerator / denominator, matrix)
+
+    numerator = np.dot(grad, delta_x.transpose())
+    denominator = np.dot(delta_x.transpose(), grad)
+    matrix_a = np.dot(matrix_a, np.identity(2) - numerator / denominator)
+
+    numerator = np.dot(delta_x, delta_x.transpose())
+    denominator = np.dot(delta_x.transpose(), grad)
+
+    return matrix_a + numerator / denominator
+
+
+def greenstadt(x, x_new, matrix):
+    grad = np.array([grad_f(x_new) - grad_f(x)]).transpose()
+    delta_x = np.array([x_new - x]).transpose()
+
+    denominator = np.dot(grad.transpose(), matrix)
+    denominator = np.dot(denominator, grad)
+    coef = 1 / denominator
+
+    matrix_a = np.dot(delta_x, grad.transpose())
+    matrix_a = np.dot(matrix_a, matrix)
+    matrix_b = np.dot(matrix, grad)
+    matrix_b = np.dot(matrix_b, delta_x.transpose())
+
+    numerator1 = np.dot(grad.transpose(), delta_x)
+    numerator2 = np.dot(grad.transpose(), matrix)
+    numerator2 = np.dot(numerator2, grad)
+
+    numerator = numerator1 + numerator2
+    numerator = numerator * matrix
+    numerator = np.dot(numerator, grad)
+    numerator = np.dot(numerator, grad.transpose())
+    numerator = np.dot(numerator, matrix)
+
+    denominator = np.dot(grad.transpose(), matrix)
+    denominator = np.dot(denominator, grad)
+
+    return coef * (matrix_a + matrix_b - numerator / denominator)
+
+
 def variable_metric_method(x, count_matrix, filename='output.csv'):
     matrix = np.identity(2)
     iteration = 0
@@ -151,25 +222,17 @@ if __name__ == '__main__':
 
     print('Searching %simum of function\n' % sys.argv[3])
 
-    # Method 1. Davidon-Fletcher-Powell
-    res, it = variable_metric_method(x_init, davidon_fletcher_powell, 'dfp.csv')
+    # Variable metric methods
+    for method in [davidon_fletcher_powell, newton_raphson, broyden, pearson3, fletcher, greenstadt]:
+        res, it = variable_metric_method(x_init, method, method.__name__ + '.csv')
+        if it == MAX_ITER:
+            print('This method can\'t calculate or function doesn\'t have global %simum. '
+                  'Value on %d iter:\n' % (sys.argv[3], MAX_ITER))
+        print('%s:\nx = %f\ny = %f\nf(x, y) = %f\niter:%d\n' % (method.__name__, res[0], res[1], f(res), it))
+
+    # Conjugate gradient
+    res, it = conjugate_gradient_method(x_init, 'conjugate_gradient.csv')
     if it == MAX_ITER:
         print('This method can\'t calculate or function doesn\'t have global %simum. '
               'Value on %d iter:\n' % (sys.argv[3], MAX_ITER))
-
-    print('Davidon-Fletcher-Powell method:\nx = %f\ny = %f\nf(x, y) = %f\niter:%d\n' % (res[0], res[1], f(res), it))
-
-    # Method 2. Newton-Raphson
-    res, it = variable_metric_method(x_init, newton_raphson, 'nr.csv')
-    if it == MAX_ITER:
-        print('This method can\'t calculate or function doesn\'t have global %simum. '
-              'Value on %d iter:\n' % (sys.argv[3], MAX_ITER))
-
-    print('Newton-Raphson method:\nx = %f\ny = %f\nf(x, y) = %f\niter:%d\n' % (res[0], res[1], f(res), it))
-
-    # Method 3. Conjugate gradient
-    res, it = conjugate_gradient_method(x_init, 'cg.csv')
-    if it == MAX_ITER:
-        print('This method can\'t calculate or function doesn\'t have global %simum. '
-              'Value on %d iter:\n' % (sys.argv[3], MAX_ITER))
-    print('Conjugate gradient method:\nx = %f\ny = %f\nf(x, y) = %f\niter:%d\n' % (res[0], res[1], f(res), it))
+    print('conjugate_gradient:\nx = %f\ny = %f\nf(x, y) = %f\niter:%d\n' % (res[0], res[1], f(res), it))
